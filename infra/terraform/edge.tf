@@ -23,6 +23,10 @@ resource "aws_acm_certificate_validation" "main" {
   certificate_arn         = aws_acm_certificate.main.arn
   validation_record_fqdns = [for r in aws_route53_record.validation : r.fqdn]
 }
+# Public HTTPS is the intended ingress for the dashboard and signed connector API.
+# TLS, WAF and edge-to-task security groups protect the private application targets.
+# See docs/security-model.md#network-policy-and-scanner-exceptions.
+#trivy:ignore:AVD-AWS-0053
 resource "aws_lb" "api" {
   name                       = local.name
   internal                   = false

@@ -40,7 +40,7 @@ locals {
       Principal = {
         Service = "ecs-tasks.amazonaws.com"
       },
-      Action = "sts:AssumeRole",
+      Action    = "sts:AssumeRole",
       Condition = { StringEquals = { "aws:SourceAccount" = var.aws_account_id } }
       }
     ]
@@ -417,7 +417,7 @@ resource "aws_iam_role" "scheduler" {
       Principal = {
         Service = "scheduler.amazonaws.com"
       },
-      Action = "sts:AssumeRole",
+      Action    = "sts:AssumeRole",
       Condition = { StringEquals = { "aws:SourceAccount" = var.aws_account_id } }
       }
     ]

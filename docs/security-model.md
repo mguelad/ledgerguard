@@ -23,6 +23,14 @@ Credential blobs use AES-256-GCM envelope encryption. AAD binds organization, co
 
 Signed Woo bodies require a five-minute time window, strict schema and bounded input: 1 MiB, depth twelve and at most one hundred facts. Replay IDs are retained for at least twenty-four hours. The HMAC Stripe boundary verifies raw bytes before minimal receipt persistence; account and test/live namespace must agree.
 
+## Network policy and scanner exceptions
+
+The public application load balancer is intentional: browsers, Stripe callbacks and the outbound WooCommerce plugin reach its HTTPS listener. TLS terminates at the load balancer, WAF is attached, and the edge security group can reach application tasks only on port 8000 inside the VPC. Tasks and the database use private subnets. `AVD-AWS-0053` is excepted only on `aws_lb.api`; making this load balancer internal would break the public service.
+
+Tasks need outbound TCP/443 through NAT to Stripe and AWS HTTPS endpoints whose addresses can change. The `AVD-AWS-0104` exception is attached only to `aws_security_group_rule.tasks_https` and constrained to ports 443/443 with TCP. Task rules are standalone resources so Trivy can evaluate these attributes; inline block exceptions do not enforce the same attribute constraints. Database and DNS egress remain restricted to the VPC. No other port, rule or resource is exempted. These are explicit architecture exceptions, not a claim that internet exposure or unrestricted HTTPS destinations carry no risk.
+
+Before production acceptance, review HTTPS destination control (for example, an outbound proxy or firewall with domain allowlists and AWS private endpoints). A compromised task could otherwise contact an arbitrary HTTPS destination. Revisit both exceptions whenever the ingress or provider topology changes. Trivy continues to fail CI for all other high/critical findings; never add a repository-wide ignore to conceal a new network rule.
+
 ## Retention and deletion
 
 | Data | Policy |

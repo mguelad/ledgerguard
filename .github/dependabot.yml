@@ -6,6 +6,10 @@ updates:
   - package-ecosystem: uv
     directory: /
     schedule: {interval: weekly}
+    # Keep the supported Django 5.2 LTS line; framework migrations are deliberate.
+    ignore:
+      - dependency-name: django
+        versions: [">=5.3"]
   - package-ecosystem: composer
     directory: /plugins/ledgerguard-woocommerce
     schedule: {interval: weekly}
@@ -18,3 +22,7 @@ updates:
   - package-ecosystem: docker
     directory: /
     schedule: {interval: weekly}
+    # Python 3.13 is the supported runtime; accept patch and digest updates.
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-major, version-update:semver-minor]
