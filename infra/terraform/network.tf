@@ -73,36 +73,43 @@ resource "aws_security_group" "edge" {
 resource "aws_security_group" "tasks" {
   name_prefix = "ledgerguard-tasks-"
   vpc_id      = aws_vpc.main.id
-  ingress {
-    from_port       = 8000
-    to_port         = 8000
-    protocol        = "tcp"
-    security_groups = [aws_security_group.edge.id]
-  }
-  egress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
-  egress {
-    from_port   = 53
-    to_port     = 53
-    protocol    = "udp"
-    cidr_blocks = [var.vpc_cidr]
-  }
-  egress {
-    from_port   = 53
-    to_port     = 53
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
+}
+resource "aws_security_group_rule" "tasks_ingress" {
+  type                     = "ingress"
+  security_group_id        = aws_security_group.tasks.id
+  source_security_group_id = aws_security_group.edge.id
+  from_port                = 8000
+  to_port                  = 8000
+  protocol                 = "tcp"
+}
+# Stripe and AWS HTTPS endpoints use changing public addresses; tasks stay private.
+# Keep this rule separate so Trivy can evaluate the exception's port constraints.
+# Review the destination restriction before production (docs/security-model.md).
+#trivy:ignore:AVD-AWS-0104[from_port=443,to_port=443,protocol=tcp]
+resource "aws_security_group_rule" "tasks_https" {
+  type              = "egress"
+  security_group_id = aws_security_group.tasks.id
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+resource "aws_security_group_rule" "tasks_database" {
+  type              = "egress"
+  security_group_id = aws_security_group.tasks.id
+  from_port         = 5432
+  to_port           = 5432
+  protocol          = "tcp"
+  cidr_blocks       = [var.vpc_cidr]
+}
+resource "aws_security_group_rule" "tasks_dns" {
+  for_each          = toset(["udp", "tcp"])
+  type              = "egress"
+  security_group_id = aws_security_group.tasks.id
+  from_port         = 53
+  to_port           = 53
+  protocol          = each.value
+  cidr_blocks       = [var.vpc_cidr]
 }
 resource "aws_security_group" "database" {
   name_prefix = "ledgerguard-db-"

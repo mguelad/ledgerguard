@@ -4,7 +4,7 @@ x-app: &app
   env_file: .env
   init: true
   read_only: true
-  tmpfs: [/tmp:uid=10001,gid=10001,mode=1777]
+  tmpfs: ["/tmp:uid=10001,gid=10001,mode=1777"]
   volumes: [reports:/app/var]
   security_opt: [no-new-privileges:true]
   cap_drop: [ALL]
