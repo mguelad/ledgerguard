@@ -1,0 +1,70 @@
+name: ledgerguard
+x-app: &app
+  build: .
+  env_file: .env
+  init: true
+  read_only: true
+  tmpfs: [/tmp:uid=10001,gid=10001,mode=1777]
+  volumes: [reports:/app/var]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+services:
+  db:
+    image: postgres:17-bookworm@sha256:051f7b7b3abdd564d5d1bd1e8c4b9c1b6e77087d1dd22020ede611c096a272e0
+    environment:
+      POSTGRES_DB: ledgerguard
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: local-database-administrator
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ./infra/local/bootstrap.sql:/docker-entrypoint-initdb.d/10-ledgerguard.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres -d ledgerguard]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    <<: *app
+    environment:
+      DATABASE_URL: postgresql://ledgerguard_migrator:local-migrator@db:5432/ledgerguard
+      LEDGERGUARD_DATABASE_ROLE: migrator
+    command: [python, manage.py, migrate, --noinput]
+    depends_on:
+      db: {condition: service_healthy}
+  api:
+    <<: *app
+    environment:
+      LEDGERGUARD_DATABASE_ROLE: application
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+  worker:
+    <<: *app
+    environment:
+      LEDGERGUARD_DATABASE_ROLE: application
+    command: [python, manage.py, worker]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  scheduler:
+    <<: *app
+    environment:
+      LEDGERGUARD_DATABASE_ROLE: application
+    command: [python, manage.py, schedule, --loop]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  maintenance:
+    <<: *app
+    environment:
+      DATABASE_URL: postgresql://ledgerguard_maintenance:local-maintenance@db:5432/ledgerguard
+      LEDGERGUARD_DATABASE_ROLE: maintenance
+    command: [python, manage.py, maintain, --loop]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+volumes:
+  database:
+  reports:

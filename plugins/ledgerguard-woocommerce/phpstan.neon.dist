@@ -1,0 +1,12 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+parameters:
+    level: 6
+    paths:
+        - ledgerguard-woocommerce.php
+        - uninstall.php
+        - includes
+    scanFiles:
+        - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+        - ../../tests/php/action-scheduler.stub.php
+    tmpDir: .phpstan

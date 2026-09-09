@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ledgerguard.invalid/woo-claim-1.0.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "pairing_code": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{40,128}$"
+    },
+    "public_key": {
+      "type": "string",
+      "maxLength": 44,
+      "pattern": "^[A-Za-z0-9+/]{43}=$"
+    },
+    "key_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "mode": {
+      "enum": [
+        "test",
+        "live"
+      ]
+    },
+    "versions": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        },
+        "wordpress": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        },
+        "woocommerce": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        },
+        "gateway": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        },
+        "php": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        }
+      },
+      "required": [
+        "plugin",
+        "wordpress",
+        "woocommerce",
+        "gateway",
+        "php"
+      ],
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "orders",
+          "refunds",
+          "hpos",
+          "delta",
+          "repair"
+        ]
+      },
+      "minItems": 4,
+      "maxItems": 5
+    }
+  },
+  "required": [
+    "schema_version",
+    "request_id",
+    "pairing_code",
+    "public_key",
+    "key_id",
+    "sent_at",
+    "mode",
+    "versions",
+    "capabilities"
+  ],
+  "additionalProperties": false
+}

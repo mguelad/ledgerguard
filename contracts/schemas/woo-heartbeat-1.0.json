@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ledgerguard.invalid/woo-heartbeat-1.0.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "installation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "queue_depth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000
+    },
+    "versions": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        },
+        "wordpress": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        },
+        "woocommerce": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        },
+        "gateway": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        },
+        "php": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[0-9][A-Za-z0-9.+-]*$"
+        }
+      },
+      "required": [
+        "plugin",
+        "wordpress",
+        "woocommerce",
+        "gateway",
+        "php"
+      ],
+      "additionalProperties": false
+    },
+    "hpos": {
+      "type": "boolean"
+    },
+    "clock_offset_seconds": {
+      "type": "integer",
+      "minimum": -300,
+      "maximum": 300
+    }
+  },
+  "required": [
+    "schema_version",
+    "request_id",
+    "installation_id",
+    "sent_at",
+    "queue_depth",
+    "versions",
+    "hpos",
+    "clock_offset_seconds"
+  ],
+  "additionalProperties": false
+}

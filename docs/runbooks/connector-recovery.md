@@ -1,0 +1,3 @@
+# Connector Recovery
+
+Inspect connector status, last safe error, all four coverage ranges and pending scan phase/page. Treat heartbeat and coverage separately. During provider outage leave financial findings unresolved; PI-009 describes unavailable evidence. Check published provider status and rate limits. For a transient failure, wait for bounded retries; do not reset cursors to the current time. For a permanent token error, reauthorize the Stripe App and verify the account/mode. For Woo, correct gateway mode, clock, TLS or unsupported data, then request a full repair from its administrator screen. Confirm contiguous scan completion, exact link verification and two clean evaluations before declaring recovery. Compare a known test order and refund to provider evidence.

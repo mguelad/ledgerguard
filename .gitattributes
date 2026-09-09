@@ -1,0 +1,7 @@
+* text=auto eol=lf
+fixtures/csv/*.csv -text whitespace=cr-at-eol
+*.ttf binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary

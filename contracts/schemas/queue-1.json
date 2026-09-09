@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ledgerguard.invalid/queue-1.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "message_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "task_type": {
+      "enum": [
+        "stripe_receipt",
+        "stripe_poll",
+        "stripe_repair",
+        "reconcile_store",
+        "notify",
+        "security_notify",
+        "report",
+        "delete_tenant",
+        "retention",
+        "stripe_scan_page",
+        "deliver_email",
+        "notify_digest"
+      ]
+    },
+    "organization_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "resource_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "attempt_context": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "traceparent": {
+      "type": "string",
+      "maxLength": 55,
+      "pattern": "^(?:00-[a-f0-9]{32}-[a-f0-9]{16}-[a-f0-9]{2})?$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "message_id",
+    "task_type",
+    "organization_id",
+    "resource_id",
+    "attempt_context",
+    "traceparent"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,3 @@
+REVOKE UPDATE,DELETE ON accounts_auditlog,ingestion_observation,findings_findingevent,findings_reconciliationrun FROM ledgerguard_app;
+REVOKE UPDATE ON accounts_auditlog,ingestion_observation,findings_findingevent,findings_reconciliationrun FROM ledgerguard_maintenance;
+REVOKE ALL ON django_migrations FROM ledgerguard_app,ledgerguard_maintenance;

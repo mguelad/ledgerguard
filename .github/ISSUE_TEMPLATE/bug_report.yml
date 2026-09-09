@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible defect using synthetic data.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, merchant exports, or customer records.
+        Report security vulnerabilities privately: https://github.com/mguelad/ledgerguard/security/advisories/new
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: 0.1.0 or a commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal example with synthetic data and relevant environment details.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Remove secrets and identifying information before posting.

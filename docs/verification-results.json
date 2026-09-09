@@ -1,0 +1,43 @@
+{
+  "version": "0.1.0",
+  "verified_date": "2026-09-09",
+  "status": "source_handoff",
+  "python": "3.13.14",
+  "django": "5.2.17",
+  "database_harness": "PostgreSQL 17 / PGlite 0.3.16",
+  "test_results": {
+    "collected": 189,
+    "passed": 187,
+    "skipped": 2,
+    "failed": 0,
+    "warnings": 0
+  },
+  "coverage": {
+    "kind": "statement",
+    "paths": [
+      "apps",
+      "modules",
+      "packages",
+      "workers"
+    ],
+    "covered": 3079,
+    "statements": 3650,
+    "percent": 84.36,
+    "threshold_percent": 80,
+    "excluded_lines": 0
+  },
+  "pending_gates": [
+    "native_postgresql_authentication_and_concurrency",
+    "docker_and_compose",
+    "browser_journeys",
+    "wordpress_runtime_matrix",
+    "terraform_provider_validation_and_plan",
+    "trivy_source_and_image_scans",
+    "aws_bootstrap_and_recovery",
+    "stripe_sandbox_and_pilot",
+    "load_and_availability",
+    "accessibility",
+    "independent_security_review"
+  ],
+  "production_accepted": false
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ledgerguard.invalid/woo-rotation-1.0.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "installation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "new_key_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "new_public_key": {
+      "type": "string",
+      "maxLength": 44,
+      "pattern": "^[A-Za-z0-9+/]{43}=$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "request_id",
+    "installation_id",
+    "sent_at",
+    "new_key_id",
+    "new_public_key"
+  ],
+  "additionalProperties": false
+}

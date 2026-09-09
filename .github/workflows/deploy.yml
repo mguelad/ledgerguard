@@ -1,0 +1,49 @@
+name: Deploy verified release
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: environment
+        required: true
+      image:
+        description: Full ECR image reference with sha256 digest from a successful release
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: ledgerguard-deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      IMAGE: ${{ inputs.image }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: '0.11.33'
+      - run: uv sync --frozen
+      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-1
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+      - name: Verify release identity before running migrations
+        run: |
+          aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin "${ECR_REPOSITORY%%/*}"
+          cosign verify --certificate-identity "https://github.com/$GITHUB_REPOSITORY/.github/workflows/release.yml@refs/heads/main" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$IMAGE"
+          uv run --frozen python scripts/deploy.py --environment "$DEPLOY_ENVIRONMENT" --image "$IMAGE"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: deployment-receipt
+          path: deployment.json

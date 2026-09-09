@@ -1,0 +1,3 @@
+# Alert Storm
+
+Disable the affected rule on the store using a recent owner/admin session and the current version. Disable store/organization alerts if scope is broader. Preserve findings and evidence; a kill switch must not resolve them. Compare source identities, currency exponent, mode, coverage, grace and current revisions. Reproduce the incident in a new golden fixture. Run the correction in shadow mode against the same observations and review false-positive labels. Verify queued notifications cancel under the active kill switch. Re-enable one reviewed store as a canary, then expand after clean evidence. Document the policy and rule versions before and after the change.

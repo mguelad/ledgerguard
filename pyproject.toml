@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ledgerguard"
+version = "0.1.0"
+description = "Payment integrity monitoring for WooCommerce agencies"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "Django>=5.2.17,<5.3", "djangorestframework>=3.18,<3.19", "psycopg[binary]>=3.3,<4",
+  "cryptography>=50,<51", "jsonschema>=4.26,<5", "httpx>=0.28,<0.29", "boto3>=1.43,<2",
+  "PyJWT[crypto]>=2.13,<3", "gunicorn>=26,<27", "whitenoise>=6.12,<7", "reportlab>=5,<6",
+]
+[project.optional-dependencies]
+dev = ["pytest>=9,<10", "pytest-django>=4.14,<5", "pytest-cov>=7,<8", "hypothesis>=6.167,<7", "ruff>=0.16,<0.17", "mypy>=2.3,<3", "django-stubs>=6.1,<7", "djangorestframework-stubs>=3.18,<4", "types-jsonschema", "types-PyYAML", "PyYAML>=6,<7", "moto[sqs,kms,s3,ses]>=5.2,<6", "pip-audit>=2.10,<3", "bandit>=1.8,<2", "openapi-spec-validator>=0.7,<0.9"]
+[project.scripts]
+ledgerguard-audit = "modules.reporting.cli:main"
+[tool.setuptools.packages.find]
+include = ["apps*", "modules*", "packages*", "workers*"]
+[tool.setuptools.package-data]
+"modules.reporting" = ["fonts/*.ttf", "fonts/LICENSE"]
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "apps.control_plane.settings"
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "--strict-markers -ra"
+markers = ["integration: requires PostgreSQL", "e2e: browser or provider integration"]
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["E501", "S101"]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S311"]
+"*/migrations/*" = ["E", "I"]
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["mypy_django_plugin.main"]
+exclude = ["migrations", "tests"]
+[[tool.mypy.overrides]]
+module = ["boto3.*", "botocore.*", "reportlab.*"]
+ignore_missing_imports = true
+[tool.django-stubs]
+django_settings_module = "apps.control_plane.settings"

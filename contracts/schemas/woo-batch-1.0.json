@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ledgerguard.invalid/woo-batch-1.0.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "installation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "covered_from": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "covered_through": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "scan_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "final_page": {
+      "type": "boolean"
+    },
+    "records": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "order"
+              },
+              "source_id": {
+                "type": "string",
+                "maxLength": 20,
+                "pattern": "^[1-9][0-9]*$"
+              },
+              "revision": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$"
+              },
+              "status": {
+                "enum": [
+                  "pending",
+                  "processing",
+                  "on-hold",
+                  "completed",
+                  "cancelled",
+                  "refunded",
+                  "failed",
+                  "checkout-draft",
+                  "trash"
+                ]
+              },
+              "amount": {
+                "type": "string",
+                "maxLength": 24,
+                "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+              },
+              "total_refunded": {
+                "type": "string",
+                "maxLength": 24,
+                "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+              },
+              "currency": {
+                "type": "string",
+                "maxLength": 3,
+                "pattern": "^[A-Z]{3}$"
+              },
+              "payment_method": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^stripe(?:_[a-z0-9_]+)?$"
+              },
+              "transaction_id": {
+                "type": "string",
+                "maxLength": 255,
+                "pattern": "^(?:(?:pi|ch|cs)_[A-Za-z0-9_]+)?$"
+              },
+              "stripe_ids": {
+                "type": "object",
+                "properties": {
+                  "payment_intent": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "pattern": "^pi_[A-Za-z0-9]+$"
+                  },
+                  "charge": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "pattern": "^ch_[A-Za-z0-9]+$"
+                  },
+                  "checkout_session": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "pattern": "^cs_(test_|live_)?[A-Za-z0-9]+$"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              },
+              "paid_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "Z$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "completed_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "Z$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "order_number": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9._/-]+$"
+              },
+              "refund_ids": {
+                "type": "array",
+                "maxItems": 10000,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20,
+                  "pattern": "^[1-9][0-9]*$"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "source_id",
+              "revision",
+              "created_at",
+              "status",
+              "amount",
+              "total_refunded",
+              "currency",
+              "payment_method",
+              "transaction_id",
+              "stripe_ids",
+              "paid_at",
+              "refund_ids"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "refund"
+              },
+              "source_id": {
+                "type": "string",
+                "maxLength": 20,
+                "pattern": "^[1-9][0-9]*$"
+              },
+              "parent_id": {
+                "type": "string",
+                "maxLength": 20,
+                "pattern": "^[1-9][0-9]*$"
+              },
+              "revision": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$"
+              },
+              "amount": {
+                "type": "string",
+                "maxLength": 24,
+                "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+              },
+              "currency": {
+                "type": "string",
+                "maxLength": 3,
+                "pattern": "^[A-Z]{3}$"
+              },
+              "status": {
+                "const": "recorded"
+              }
+            },
+            "required": [
+              "kind",
+              "source_id",
+              "parent_id",
+              "revision",
+              "created_at",
+              "amount",
+              "currency",
+              "status"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "request_id",
+    "installation_id",
+    "sent_at",
+    "covered_from",
+    "covered_through",
+    "scan_id",
+    "page",
+    "final_page",
+    "records"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,72 @@
+name: WooCommerce compatibility
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.3'
+          extensions: sodium
+          tools: composer:2
+          coverage: none
+      - run: composer install --working-dir=plugins/ledgerguard-woocommerce --no-interaction --prefer-dist
+      - run: composer audit --working-dir=plugins/ledgerguard-woocommerce --locked
+      - run: plugins/ledgerguard-woocommerce/vendor/bin/phpcs --standard=plugins/ledgerguard-woocommerce/phpcs.xml.dist
+      - run: plugins/ledgerguard-woocommerce/vendor/bin/phpstan analyse -c plugins/ledgerguard-woocommerce/phpstan.neon.dist --memory-limit=2G --debug --no-progress
+      - run: php tests/php/protocol.php
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+        wordpress: ['7.0', '7.1']
+        woocommerce: ['11.0.1', '11.1.0']
+        hpos: ['yes', 'no']
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: local-test-password
+          MYSQL_DATABASE: wordpress_test
+        ports: [3306:3306]
+        options: >-
+          --health-cmd="mysqladmin ping -plocal-test-password"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, sodium
+          tools: wp-cli:2.12.0
+          coverage: none
+      - name: Install pinned WordPress and gateway
+        env:
+          WORDPRESS_VERSION: ${{ matrix.wordpress }}
+          WOOCOMMERCE_VERSION: ${{ matrix.woocommerce }}
+          HPOS: ${{ matrix.hpos }}
+        run: |
+          mkdir -p /tmp/ledgerguard-wp
+          wp core download --path=/tmp/ledgerguard-wp --version="$WORDPRESS_VERSION" --locale=en_US
+          wp core verify-checksums --path=/tmp/ledgerguard-wp
+          wp config create --path=/tmp/ledgerguard-wp --dbname=wordpress_test --dbuser=root --dbpass=local-test-password --dbhost=127.0.0.1:3306
+          wp core install --path=/tmp/ledgerguard-wp --url=http://localhost --title='LedgerGuard tests' --admin_user=test-admin --admin_password=synthetic-local-password --admin_email=test@example.invalid --skip-email
+          wp plugin install woocommerce --path=/tmp/ledgerguard-wp --version="$WOOCOMMERCE_VERSION" --activate
+          wp plugin install woocommerce-gateway-stripe --path=/tmp/ledgerguard-wp --version=10.9.1 --activate
+          cp -r plugins/ledgerguard-woocommerce /tmp/ledgerguard-wp/wp-content/plugins/
+          wp plugin activate ledgerguard-woocommerce --path=/tmp/ledgerguard-wp
+          wp option update woocommerce_custom_orders_table_enabled "$HPOS" --path=/tmp/ledgerguard-wp
+          wp eval-file "$GITHUB_WORKSPACE/tests/php/woocommerce-crud.php" --path=/tmp/ledgerguard-wp

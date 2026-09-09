@@ -1,0 +1,3 @@
+# Plugin Rollback
+
+Pause the affected store alerts and retain its scan error. Confirm the exact WordPress, Woo, official Stripe extension, PHP and HPOS versions. Reproduce with synthetic orders in that matrix. Verify the previous plugin archive's signature, checksum and fixed destination before installation through the authorized WordPress administrator. Rollback must retain the same compatible wire schema; otherwise disconnect and re-pair explicitly. Keep source orders/payments untouched. Run a full repair and compare payment/refund identity and amount before enabling alerts. Publish the verified compatibility range and pin the newly accepted gateway version in CI.

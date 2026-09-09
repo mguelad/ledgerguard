@@ -1,0 +1,17 @@
+environment = "staging"
+aws_account_id = "123456789012"
+domain_name = "ledgerguard.example.com"
+hosted_zone_id = "REPLACE_WITH_ZONE_ID"
+github_repository = "OWNER/REPOSITORY"
+github_oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+application_secret_arn = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:REPLACE-application"
+migrator_database_secret_arn = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:REPLACE-migrator"
+maintenance_database_secret_arn = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:REPLACE-maintenance"
+operations_topic_arn = "arn:aws:sns:eu-west-1:123456789012:ledgerguard-staging-operations"
+alerts_email_domain = "example.com"
+# Initial disabled stack only. Replace with a verified release digest before startup.
+image_digest_uri = "123456789012.dkr.ecr.eu-west-1.amazonaws.com/ledgerguard-staging@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+desired_api_tasks = 0
+desired_worker_tasks = 0
+enable_multi_az = true
+ga_release = false

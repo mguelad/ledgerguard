@@ -1,0 +1,103 @@
+name: Source checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-bookworm@sha256:051f7b7b3abdd564d5d1bd1e8c4b9c1b6e77087d1dd22020ede611c096a272e0
+        env:
+          POSTGRES_DB: ledgerguard_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-password
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ledgerguard_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:local-test-password@localhost:5432/ledgerguard_test
+      DB_SSLMODE: disable
+      LEDGERGUARD_INTEGRATION: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: '0.11.33'
+          enable-cache: true
+      - run: uv sync --frozen --extra dev
+      - run: uv run --frozen --extra dev ruff check .
+      - run: uv run --frozen --extra dev ruff format --check .
+      - run: uv run --frozen --extra dev mypy apps modules packages workers
+      - run: uv run --frozen --extra dev python scripts/check_contracts.py
+      - run: uv run --frozen python scripts/check_deployment_settings.py
+      - run: STATIC_MANIFEST=1 uv run --frozen python manage.py collectstatic --noinput
+      - run: uv run --frozen --extra dev pytest --cov=apps --cov=modules --cov=packages --cov=workers --cov-fail-under=80 --cov-report=xml --junitxml=test-results.xml
+      - run: uv run --frozen python manage.py makemigrations --check --dry-run
+      - run: node --check static/app.js
+      - run: uv run --frozen --extra dev pip-audit -r requirements.lock --no-deps --disable-pip
+      - run: uv run --frozen --extra dev bandit -r apps modules packages workers scripts -ll -q
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: python-verification
+          path: |
+            coverage.xml
+            test-results.xml
+  terraform:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: '1.12.2'
+      - run: terraform fmt -check -recursive infra
+      - run: terraform -chdir=infra/bootstrap init -backend=false -lockfile=readonly
+      - run: terraform -chdir=infra/bootstrap validate
+      - run: terraform -chdir=infra/terraform init -backend=false -lockfile=readonly
+      - run: terraform -chdir=infra/terraform validate
+  source_security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scanners: secret,vuln,misconfig
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          hide-progress: true
+          skip-dirs: plugins/ledgerguard-woocommerce/vendor
+  container:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python3 scripts/configure_local.py
+      - run: docker compose up --build --wait api worker scheduler maintenance
+      - run: curl --fail --retry 10 --retry-delay 3 http://localhost:8000/health/ready
+      - name: Seed isolated browser tenant
+        run: |
+          docker compose exec -T api python manage.py seed_demo --username browser_demo <<'PASSWORD'
+          local-browser-fixture-password
+          PASSWORD
+      - run: npm ci --prefix tests/browser
+      - run: npx --prefix tests/browser playwright install --with-deps chromium
+      - run: node tests/browser/dashboard.mjs
+        env:
+          LG_BROWSER_PASSWORD: local-browser-fixture-password
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: browser-verification
+          path: test-results/browser
+      - run: docker compose down
+        if: always()

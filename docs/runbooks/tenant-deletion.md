@@ -1,0 +1,3 @@
+# Tenant Deletion
+
+Authenticate as the organization owner within ten minutes. Offer the supported findings export if requested, deliver through the private report link and respect its one-day expiry. A full statutory data request requires a reviewed inventory of all account/support records beyond a findings report. Confirm the organization name in the deletion control. Intake stops and credentials are forgotten immediately. Run the scheduled maintenance job with its separate role. Verify report object versions and tenant table counts are zero and an external erasure receipt exists. Record its digest and explain thirty-five-day backup ageing. Do not delete a global login shared with another organization. Restores must replay the erasure ledger before reopening ingress.
