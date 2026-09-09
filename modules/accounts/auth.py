@@ -10,6 +10,7 @@ import httpx
 import jwt
 from django.conf import settings
 from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import LoginView
 from django.db import connection, transaction
 from django.http import HttpRequest, HttpResponse, HttpResponseBase
@@ -20,8 +21,16 @@ from apps.control_plane.errors import Problem, problem_response
 from modules.accounts.models import Membership
 
 
+class LocalAuthenticationForm(AuthenticationForm):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Preserve document-order keyboard navigation and the skip link.
+        self.fields["username"].widget.attrs.pop("autofocus", None)
+
+
 class LocalLoginView(LoginView):
     template_name = "login.html"
+    form_class = LocalAuthenticationForm
     next_page = "/"
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:

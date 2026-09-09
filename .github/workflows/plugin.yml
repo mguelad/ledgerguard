@@ -60,8 +60,11 @@ jobs:
           HPOS: ${{ matrix.hpos }}
         run: |
           mkdir -p /tmp/ledgerguard-wp
-          wp core download --path=/tmp/ledgerguard-wp --version="$WORDPRESS_VERSION" --locale=en_US
-          wp core verify-checksums --path=/tmp/ledgerguard-wp
+          # WP-CLI 2.12's PharData extraction truncates long WordPress 7 paths.
+          # GNU tar preserves them; verify every core file before executing it.
+          curl --fail --silent --show-error --retry 3 "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz" --output "$RUNNER_TEMP/wordpress.tar.gz"
+          tar --extract --gzip --file "$RUNNER_TEMP/wordpress.tar.gz" --directory /tmp/ledgerguard-wp --strip-components=1
+          wp core verify-checksums --path=/tmp/ledgerguard-wp --version="$WORDPRESS_VERSION" --locale=en_US
           wp config create --path=/tmp/ledgerguard-wp --dbname=wordpress_test --dbuser=root --dbpass=local-test-password --dbhost=127.0.0.1:3306
           wp core install --path=/tmp/ledgerguard-wp --url=http://localhost --title='LedgerGuard tests' --admin_user=test-admin --admin_password=synthetic-local-password --admin_email=test@example.invalid --skip-email
           wp plugin install woocommerce --path=/tmp/ledgerguard-wp --version="$WOOCOMMERCE_VERSION" --activate

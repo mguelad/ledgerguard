@@ -4,6 +4,12 @@ Version: **0.1.0 source handoff**. Verification date: **9 September 2026**.
 
 The source is prepared for repository import and target-environment verification. No AWS resources were deployed and no live merchant credentials were used. This record does not constitute production acceptance.
 
+## Repository CI follow-up — 9 September 2026
+
+Commit `5941c8483690a9b330e0575643086a57e2c374cb` passed [Source checks](https://github.com/mguelad/ledgerguard/actions/runs/34351660793) and [WooCommerce compatibility](https://github.com/mguelad/ledgerguard/actions/runs/34351660745). Native PostgreSQL ran **192 tests with no skips and 84.35% statement coverage**, including the previously unverified authentication and concurrency cases. Docker/Compose health, desktop/mobile browser journeys, all 16 plugin combinations, Terraform provider initialization/validation, and source secret/dependency/IaC scanning also passed.
+
+This closes the corresponding automation gaps in the historical handoff record below. The source scan has two [documented, resource-specific network exceptions](security-model.md#network-policy-and-scanner-exceptions); it does not claim that public ingress or arbitrary HTTPS destinations have no risk. AWS planning/deployment, release-image scanning, Stripe sandbox acceptance, recovery, load, accessibility review and independent security testing remain open. The machine-readable `verification-results.json` preserves the original handoff measurements.
+
 ## Executed checks
 
 | Check | Result | Scope |
