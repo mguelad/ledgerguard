@@ -13,7 +13,7 @@ dependencies = [
   "PyJWT[crypto]>=2.13,<3", "gunicorn>=26,<27", "whitenoise>=6.12,<7", "reportlab>=5,<6",
 ]
 [project.optional-dependencies]
-dev = ["pytest>=9,<10", "pytest-django>=4.14,<5", "pytest-cov>=7,<8", "hypothesis>=6.167,<7", "ruff>=0.16,<0.17", "mypy>=2.3,<3", "django-stubs>=6.1,<7", "djangorestframework-stubs>=3.18,<4", "types-jsonschema", "types-PyYAML", "PyYAML>=6,<7", "moto[sqs,kms,s3,ses]>=5.2,<6", "pip-audit>=2.10,<3", "bandit>=1.8,<2", "openapi-spec-validator>=0.7,<0.9"]
+dev = ["pytest>=9,<10", "pytest-django>=4.14,<5", "pytest-cov>=7,<8", "hypothesis>=6.167,<7", "ruff>=0.16,<0.17", "mypy>=2.3,<3", "django-stubs>=6.1,<7", "djangorestframework-stubs>=3.18,<4", "types-jsonschema", "types-PyYAML", "PyYAML>=6,<7", "moto[sqs,kms,s3,ses]>=5.2,<6", "pip-audit>=2.10,<3", "bandit>=1.8,<2", "openapi-spec-validator>=0.7,<0.10"]
 [project.scripts]
 ledgerguard-audit = "modules.reporting.cli:main"
 [tool.setuptools.packages.find]
