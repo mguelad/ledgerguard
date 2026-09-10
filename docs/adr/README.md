@@ -13,7 +13,7 @@ Original decisions preserve the handoff statuses and consequences. Implementatio
 | [ADR-007: Deterministic decision authority](007.md) | Accepted |
 | [ADR-008: Shared-schema PostgreSQL with RLS](008.md) | Accepted |
 | [ADR-009: Allowlisted facts without raw payload retention](009.md) | Accepted |
-| [ADR-010: AWS EU managed foundation](010.md) | Proposed |
+| [ADR-010: AWS EU managed foundation](010.md) | Accepted for implementation; environment acceptance pending |
 | [ADR-011: No automatic financial remediation in v1](011.md) | Accepted |
 | [ADR-012: PaymentIntent as payment aggregate](012.md) | Accepted |
 | [ADR-013: Protocol and runtime refinements](013.md) | Accepted for implementation |

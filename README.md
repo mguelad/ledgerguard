@@ -7,7 +7,7 @@ Read-only payment integrity monitoring for WooCommerce agencies. LedgerGuard com
 
 The v1 implementation follows the engineer handoff: Django 5.2 LTS, a framework-free reconciliation engine, PostgreSQL 17 with FORCE row-level security, Stripe App OAuth, an outbound signed WooCommerce plugin, transactional work queues and an AWS EU deployment foundation.
 
-Version 0.1.0 is a source handoff for pilot verification. Repository CI passes 192 tests on native PostgreSQL with 84.35% statement coverage, the desktop/mobile browser journeys, and all 16 WordPress/WooCommerce combinations. Provider and production-environment gates remain open. See the [verification record](docs/verification.md) before launching.
+Version 0.1.0 is prepared for AWS pilot verification, not production acceptance. The expanded local suite passes 278 tests on native PostgreSQL with 85.73% statement coverage; desktop/mobile browser journeys, Terraform validation and the hardened container scan also pass. Repository CI additionally exercises all 16 WordPress/WooCommerce combinations. Provider and production-environment gates remain open. See the [verification record](docs/verification.md) and [acceptance tooling](docs/acceptance.md) before launching.
 
 ## Run locally
 

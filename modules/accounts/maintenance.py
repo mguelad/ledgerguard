@@ -14,6 +14,7 @@ from django.db import connection
 from django.utils import timezone
 from psycopg import sql
 
+from modules.accounts.erasure_receipts import ErasureReceipt
 from modules.accounts.models import AuditLog, Invitation, Organization, TenantDirectory
 from modules.accounts.tenancy import require_database_role, tenant_scope
 from modules.connectors.models import OAuthState, PairingCode, PairingLocator, ResourceLocator
@@ -69,8 +70,10 @@ def tenant_models() -> list[Any]:
     return ordered
 
 
-def erase_tenant(org: UUID) -> str:
+def erase_tenant(org: UUID, *, replay_receipt: ErasureReceipt | None = None) -> str:
     require_maintenance_role()
+    if replay_receipt is not None and replay_receipt.organization_id != org:
+        raise ValueError("Erasure receipt identity mismatch")
     with tenant_scope(org):
         organization = Organization.objects.select_for_update().get(id=org)
         if organization.active or not organization.deleted_at:
@@ -96,7 +99,17 @@ def erase_tenant(org: UUID) -> str:
         receipt = hashlib.sha256(
             json.dumps({"organization_id": str(org), "counts": counts}, sort_keys=True).encode()
         ).hexdigest()
-        TenantDirectory.objects.filter(id=org).update(active=False, erased_at=timezone.now(), erasure_digest=receipt)
+        # A restore must preserve the original durable receipt, not rewrite history
+        # or require write access to the external ledger it is replaying.
+        if replay_receipt is not None:
+            receipt = replay_receipt.digest
+        TenantDirectory.objects.filter(id=org).update(
+            active=False,
+            erased_at=replay_receipt.erased_at if replay_receipt else timezone.now(),
+            erasure_digest=receipt,
+        )
+        if replay_receipt is not None:
+            return receipt
         if settings.DELETION_LEDGER_BUCKET:
             boto3.client("s3", region_name=settings.AWS_REGION).put_object(
                 Bucket=settings.DELETION_LEDGER_BUCKET,

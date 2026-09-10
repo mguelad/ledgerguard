@@ -10,7 +10,7 @@ A source archive is not evidence that a configured service meets production obje
 - Synthetic browser journeys pass at desktop/mobile sizes; keyboard and screen-reader review covers sign-in, pairing, evidence and finding actions.
 - Signed immutable image/plugin builds, dependency/container/IaC security checks and staging rollout/rollback pass.
 - Provider outage, alert storm, notification outage, poison-message replay, tenant deletion and an isolated backup restore are exercised.
-- Pilot customers approve data fields, residency, retention, support access and the required agreements. ADR-010 remains Proposed until residency/procurement acceptance is recorded.
+- Pilot customers approve data fields, residency, retention, support access and the required agreements. ADR-010 accepts AWS as the implementation target, not customer residency/procurement or production acceptance.
 
 ## Before paid beta and GA
 
@@ -26,3 +26,5 @@ A source archive is not evidence that a configured service meets production obje
 | Maintainability | ≥80% changed-code coverage, strict typing, ADRs and reproducible local stack |
 
 The default Terraform service counts are zero until secrets, database roles, migrations and signed images are prepared. Set GA flags only after evidence passes; flags do not themselves prove compliance. Preserve false-positive labels and review supported methods before expanding scope. Slack/Teams, billing, subscriptions, disputes, payouts, FX and automatic remediation are outside v1.
+
+[Acceptance tooling](acceptance.md) produces scoped evidence for deployed configuration and test-mode resource reads. A successful configuration check is not a measured RPO/RTO, delivery test, penetration test or pilot approval.
