@@ -37,6 +37,8 @@ jobs:
       - run: uv run --frozen --extra dev mypy apps modules packages workers
       - run: uv run --frozen --extra dev python scripts/check_contracts.py
       - run: uv run --frozen python scripts/check_deployment_settings.py
+      - name: Build the reviewed Stripe App contract without provider access
+        run: uv run --frozen python -m scripts.build_stripe_app --app-id com.ledgerguard.ci --origin https://staging.example.com
       - run: STATIC_MANIFEST=1 uv run --frozen python manage.py collectstatic --noinput
       - run: uv run --frozen --extra dev pytest --cov=apps --cov=modules --cov=packages --cov=workers --cov-fail-under=80 --cov-report=xml --junitxml=test-results.xml
       - run: uv run --frozen python manage.py makemigrations --check --dry-run
@@ -83,6 +85,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - run: python3 scripts/configure_local.py
       - run: docker compose up --build --wait api worker scheduler maintenance
+      - run: docker compose exec -T api python scripts/check_runtime.py
+      - name: Name the exact locally built application image for scanning
+        run: |
+          mkdir -p test-results
+          docker image tag "$(docker compose images -q api)" "ledgerguard-ci:$GITHUB_SHA"
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: ledgerguard-ci:${{ github.sha }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: json
+          output: test-results/container-scan.json
       - run: curl --fail --retry 10 --retry-delay 3 http://localhost:8000/health/ready
       - name: Seed isolated browser tenant
         run: |
@@ -99,5 +114,10 @@ jobs:
         with:
           name: browser-verification
           path: test-results/browser
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: container-security-verification
+          path: test-results/container-scan.json
       - run: docker compose down
         if: always()

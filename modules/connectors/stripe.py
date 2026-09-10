@@ -180,7 +180,7 @@ def oauth_callback(state: str, code: str, user_id: int, session_key: str) -> Ins
         return connector
 
 
-def access_token(connector: Installation) -> str:
+def refresh_access_token(connector: Installation) -> str:
     """Caller must hold SELECT FOR UPDATE on Installation for the whole provider operation."""
     if connector.status != "active":
         raise ConnectorFailure("CONNECTOR_INACTIVE", True)
@@ -196,6 +196,16 @@ def access_token(connector: Installation) -> str:
         connector.lock_version += 1
         connector.save()
         audit(connector.organization_id, "worker", "stripe.tokens_rotated", connector.id)
+    return str(tokens["access_token"])
+
+
+def access_token(connector: Installation) -> str:
+    """Resource reads must never rotate a credential inside their rollback boundary."""
+    if connector.status != "active":
+        raise ConnectorFailure("CONNECTOR_INACTIVE", True)
+    if connector.token_expires_at is None or connector.token_expires_at <= timezone.now():
+        raise ConnectorFailure("OAUTH_REFRESH_REQUIRED")
+    tokens = decrypt_secret(connector.credential_ciphertext, str(connector.organization_id), str(connector.id), "oauth")
     return str(tokens["access_token"])
 
 
@@ -236,7 +246,10 @@ class StripeReader:
             raise ConnectorFailure("STRIPE_RESOURCE_UNAVAILABLE", response.status_code != 404)
         if len(response.content) > 8_388_608:
             raise ConnectorFailure("STRIPE_RESPONSE_TOO_LARGE")
-        value = response.json()
+        try:
+            value = response.json()
+        except ValueError:
+            raise ConnectorFailure("STRIPE_SCHEMA_INVALID") from None
         if not isinstance(value, dict):
             raise ConnectorFailure("STRIPE_SCHEMA_INVALID")
         return value

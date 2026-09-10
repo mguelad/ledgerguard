@@ -12,6 +12,7 @@ from uuid import UUID
 import boto3
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -20,7 +21,7 @@ from apps.control_plane.telemetry import metric, new_trace, trace_context
 from modules.accounts.models import AuditLog, Organization, TenantDirectory
 from modules.accounts.tenancy import audit, tenant_scope
 from modules.connectors.models import Installation, Store
-from modules.connectors.stripe import ConnectorFailure
+from modules.connectors.stripe import ConnectorFailure, refresh_access_token
 from modules.findings.models import EmailDelivery, Outbox
 from modules.ingestion.models import Cursor, Receipt, Scan
 from modules.ingestion.service import enqueue
@@ -202,12 +203,37 @@ def _run_message(value: dict[str, Any]) -> bool:
                 row.status = "done"
                 row.save(update_fields=["status"])
                 return True
-            handle(row)
-            row.status = "done"
-            row.lease_until = None
-            row.last_error_code = ""
-            row.save()
-            return True
+            # Credential exchange is outside the resource-operation savepoint.
+            # Otherwise a later 429/5xx rolls back the NEW refresh token while
+            # Stripe has already revoked the OLD one, breaking the next retry.
+            connector = credential_connector(row)
+            failure: Exception | None = None
+            try:
+                if connector is not None:
+                    try:
+                        with transaction.atomic():
+                            refresh_access_token(connector)
+                    except ConnectorFailure:
+                        raise
+                    except Exception:
+                        raise ConnectorFailure("OAUTH_PERSISTENCE_UNCERTAIN", True) from None
+                with transaction.atomic():
+                    handle(row)
+                    row.status = "done"
+                    row.lease_until = None
+                    row.last_error_code = ""
+                    row.save()
+            except Exception as exc:
+                failure = exc
+                if isinstance(exc, ConnectorFailure) and exc.permanent and connector is not None:
+                    Installation.objects.filter(id=connector.id).update(
+                        status="suspended", last_error_code=exc.code, credential_ciphertext={}
+                    )
+            # Commit refreshed credentials (or suspension) while still holding
+            # the connector lock, even when the resource savepoint rolled back.
+        if failure is not None:
+            raise failure
+        return True
     except InvalidMessage:
         return False
     except Exception as exc:
@@ -257,6 +283,24 @@ def _run_message(value: dict[str, Any]) -> bool:
                 "worker_failed", extra={"event_code": "worker_failed", "message_id": str(row_id), "error_code": code}
             )
         return False
+
+
+def credential_connector(row: Outbox) -> Installation | None:
+    connector_id = None
+    if row.task_type == "stripe_receipt":
+        connector_id = (
+            Receipt.objects.filter(id=row.resource_id)
+            .exclude(status__in=["normalized", "ignored"])
+            .values_list("connector_id", flat=True)
+            .first()
+        )
+    elif row.task_type == "stripe_scan_page":
+        connector_id = (
+            Scan.objects.filter(id=row.resource_id, status="pending").values_list("connector_id", flat=True).first()
+        )
+    if connector_id is None:
+        return None
+    return Installation.objects.select_for_update().get(id=connector_id, kind="stripe", status="active")
 
 
 def local_once() -> int:

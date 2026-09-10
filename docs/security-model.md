@@ -49,3 +49,11 @@ Before production acceptance, review HTTPS destination control (for example, an 
 Deletion stops intake, destroys stored credentials, erases tenant rows and report object versions, verifies no tenant rows remain, and records an opaque receipt outside RDS. Backups age out; isolated restore must replay the erasure ledger before service resumes. Directory receipts contain an opaque ID and digest, not source facts. Account identities can be shared across organizations and are not blindly deleted with one tenant.
 
 ASVS 5.0 Level 2, independent penetration testing, access review and legal agreements remain explicit [release gates](release-gates.md).
+
+## Server container runtime
+
+The final image uses digest-pinned Debian 13 distroless base plus CPython 3.13 from the compatible pinned official Python builder. It has no shell, package manager, Perl or mount tools. Runtime-only bzip2, libffi, liblzma and libgcc libraries retain Debian package status and copyright files for inventory/scanning. The assembler refuses an existing output directory and fails if package metadata cannot be read; no scanner package database is stripped.
+
+LedgerGuard uses PostgreSQL only. Unneeded native SQLite, curses/readline, DBM, Tk and libuuid bindings, Python test extensions, ensurepip and pip are not shipped. Python's pure implementation supplies UUID generation. This is a server runtime, not a general-purpose interactive Python image; do not install dependencies or debug tools into running tasks. Develop/test in the full build environment and deploy reviewed new images. `scripts/check_runtime.py` and the Compose/browser checks verify the shipped PostgreSQL/TLS/crypto/compression/reporting paths. See the [distroless base contract](https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md).
+
+Image vulnerability scans run on ordinary CI builds as well as signed releases, with HIGH/CRITICAL failures and no image-CVE allowlist. Scans only cover identifiable components and known advisories at the time of execution; a zero result is not a security certification. Rebuild and scan both pinned bases and locked dependencies through regular review.
