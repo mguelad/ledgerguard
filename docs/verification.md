@@ -20,6 +20,14 @@ An actual scan of the old Bookworm application image exposed 60 HIGH/CRITICAL pa
 
 AWS is accepted as the implementation target in ADR-010. [Acceptance tooling](acceptance.md) documents what each result proves and does not prove. **No AWS resources were deployed, no live merchant credentials were used, and production is not accepted.** Actual App registration/installed grant, OAuth/webhook/backfill acceptance, AWS release/deploy/rollback, RDS restore with measured RPO/RTO, load, accessibility, independent security review and customer approvals remain open. The original machine-readable handoff record and measurements below remain historical evidence rather than being relabeled as newly executed checks.
 
+## Dependency review — 10 September 2026
+
+[PR #2](https://github.com/mguelad/ledgerguard/pull/2) upgrades only the Playwright test dependency family to 1.63.0. The reviewed head `4723984` passed both workflows against the hardened application, including desktop/mobile journeys. The npm audit reports no known vulnerabilities; all three packages have verified registry signatures and attestations. The Ubuntu 20.04 support removal in the [upstream release](https://github.com/microsoft/playwright/releases/tag/v1.63.0) does not affect the Ubuntu 24.04 CI runners.
+
+[PR #3](https://github.com/mguelad/ledgerguard/pull/3) upgrades the development-only OpenAPI validator and three transitive dependencies. The [0.9.0 discriminator behavior change](https://github.com/python-openapi/openapi-spec-validator/releases/tag/0.9.0) does not affect the current contracts, which contain no discriminators. Review nevertheless exposed a pre-existing gap: both old and new spec validators accepted a nonexistent request-schema reference. The contract command now explicitly checks local JSON references and pointers offline, rejects remote or escaping references, and has 21 regression cases including an end-to-end command failure. The full native PostgreSQL suite passes **299 tests, no skips, 85.73% statement coverage**. Ruff, strict mypy and Bandit pass; the installed runtime/development dependency audit reports no known vulnerabilities (the local editable application is excluded from advisory lookup). The production dependency lock and Dockerfile are unchanged by these two updates.
+
+[PR #4](https://github.com/mguelad/ledgerguard/pull/4) is closed as superseded, not merged: Python 3.13.15 is already incorporated in the Trixie/distroless runtime. Restoring its former Bookworm Dockerfile would undo the later hardening. These dependency checks do not close any AWS or real-provider acceptance gate.
+
 ## Executed checks
 
 | Check | Result | Scope |
