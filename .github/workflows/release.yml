@@ -25,8 +25,11 @@ jobs:
     env:
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
       PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+      STRIPE_APP_ID: ${{ vars.STRIPE_APP_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Build the destination-bound Stripe App contract
+        run: python3 -m scripts.build_stripe_app --app-id "$STRIPE_APP_ID" --origin "$PUBLIC_ORIGIN"
       - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
@@ -59,10 +62,13 @@ jobs:
           cosign sign --yes "$ECR_REPOSITORY@$IMAGE_DIGEST"
           python3 scripts/build_plugin.py --origin "$PUBLIC_ORIGIN"
           cosign sign-blob --yes --bundle dist/plugin.sigstore.json dist/ledgerguard-woocommerce-0.1.0.zip
+          cosign sign-blob --yes --bundle dist/stripe-app.sigstore.json dist/stripe-app.json
           printf '%s\n' "$ECR_REPOSITORY@$IMAGE_DIGEST" > dist/image.txt
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: dist/ledgerguard-woocommerce-0.1.0.zip
+          subject-path: |
+            dist/ledgerguard-woocommerce-0.1.0.zip
+            dist/stripe-app.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ledgerguard-release-${{ github.sha }}

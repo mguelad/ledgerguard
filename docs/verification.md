@@ -10,6 +10,16 @@ Commit `5941c8483690a9b330e0575643086a57e2c374cb` passed [Source checks](https:/
 
 This closes the corresponding automation gaps in the historical handoff record below. The source scan has two [documented, resource-specific network exceptions](security-model.md#network-policy-and-scanner-exceptions); it does not claim that public ingress or arbitrary HTTPS destinations have no risk. AWS planning/deployment, release-image scanning, Stripe sandbox acceptance, recovery, load, accessibility review and independent security testing remain open. The machine-readable `verification-results.json` preserves the original handoff measurements.
 
+## AWS readiness implementation — 10 September 2026
+
+Local native PostgreSQL 17 verification passes **278 tests, no skips, 85.73% statement coverage (3,383/3,946 statements)**. Ruff, strict mypy (67 application source files), contracts, fail-closed deployment settings, migration drift and Bandit pass. The locked runtime dependency audit reports no known vulnerabilities. Terraform 1.12.2 initializes with locked providers and validates both modules; no plan/apply or cloud calls were performed.
+
+Regression coverage includes preserving a rotated Stripe credential pair after a later failed resource operation; fail-closed uncertain refresh; test-only provider-read tooling with redacted evidence; strict read-only App manifest generation; account-bound read-only AWS configuration checks; and target-bound erasure replay preserving the original receipt with read-only external-ledger access. AWS/Stripe APIs in unit tests are simulated, not provider acceptance.
+
+An actual scan of the old Bookworm application image exposed 60 HIGH/CRITICAL package findings. The rebuilt Debian 13 distroless server image scans with **zero HIGH/CRITICAL findings** using Trivy 0.70.0 and the vulnerability database downloaded on this date, without image-CVE ignores. Four copied native library packages retain their Debian metadata; the final image's OS inventory includes 14 packages. Python is 3.13.15 in this runtime (3.13.14 in the local test environment). The final image passes native-library/TLS/crypto/PNG/PDF smoke checks, Compose migrations and API/worker/scheduler/maintenance startup, plus desktop/mobile browser journeys. Ordinary CI now scans its built image as well as source. The signed ECR release path still requires AWS acceptance.
+
+AWS is accepted as the implementation target in ADR-010. [Acceptance tooling](acceptance.md) documents what each result proves and does not prove. **No AWS resources were deployed, no live merchant credentials were used, and production is not accepted.** Actual App registration/installed grant, OAuth/webhook/backfill acceptance, AWS release/deploy/rollback, RDS restore with measured RPO/RTO, load, accessibility, independent security review and customer approvals remain open. The original machine-readable handoff record and measurements below remain historical evidence rather than being relabeled as newly executed checks.
+
 ## Executed checks
 
 | Check | Result | Scope |

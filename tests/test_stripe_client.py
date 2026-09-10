@@ -187,13 +187,99 @@ def test_rotation_persists_the_whole_pair_atomically(stripe_installation, monkey
     monkeypatch.setattr(stripe, "exchange", exchange)
     with tenant_scope(connector.organization_id):
         row = Installation.objects.select_for_update().get(id=connector.id)
-        assert stripe.access_token(row) == "synthetic-new-token"
+        assert stripe.refresh_access_token(row) == "synthetic-new-token"
         row.refresh_from_db()
         assert stripe.access_token(row) == "synthetic-new-token" and exchange.call_count == 1
         assert (
             decrypt_secret(row.credential_ciphertext, str(row.organization_id), str(row.id), "oauth")["refresh_token"]
             == "synthetic-new-refresh"
         )
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_resource_retry_keeps_rotated_credentials_but_rolls_back_partial_facts(stripe_installation, monkeypatch):
+    from modules.findings.models import Outbox
+    from modules.ingestion.service import enqueue
+    from workers import runtime
+
+    connector = stripe_installation
+    exchange = Mock(return_value=token_response() | {"account_id": connector.account_id})
+    monkeypatch.setattr(stripe, "exchange", exchange)
+    with tenant_scope(connector.organization_id):
+        scan = Scan.objects.create(
+            organization_id=connector.organization_id,
+            connector=connector,
+            window_from=timezone.now() - timedelta(days=1),
+            window_through=timezone.now(),
+        )
+        work = enqueue(connector.organization_id, "stripe_scan_page", scan.id, "refresh-then-failure")
+        message = runtime.message(work)
+
+    def fail_after_refresh(row):
+        Scan.objects.filter(id=scan.id).update(phase=3)
+        raise stripe.ConnectorFailure("STRIPE_UNAVAILABLE")
+
+    monkeypatch.setattr(runtime, "handle", fail_after_refresh)
+    assert not runtime.run_message(message)
+    with tenant_scope(connector.organization_id):
+        connector.refresh_from_db()
+        scan.refresh_from_db()
+        assert scan.phase == 0
+        assert stripe.access_token(connector) == "synthetic-access-token"
+        assert (
+            decrypt_secret(connector.credential_ciphertext, str(connector.organization_id), str(connector.id), "oauth")[
+                "refresh_token"
+            ]
+            == "synthetic-refresh-token"
+        )
+        Outbox.objects.filter(id=work.id).update(available_at=timezone.now())
+    monkeypatch.setattr(runtime, "handle", Mock())
+    assert runtime.run_message(message)
+    assert exchange.call_count == 1
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_reader_never_rotates_inside_resource_transaction(stripe_installation, monkeypatch):
+    exchange = Mock()
+    monkeypatch.setattr(stripe, "exchange", exchange)
+    with pytest.raises(stripe.ConnectorFailure, match="OAUTH_REFRESH_REQUIRED"):
+        stripe.access_token(stripe_installation)
+    exchange.assert_not_called()
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "error", [stripe.ConnectorFailure("OAUTH_EXCHANGE_UNCERTAIN", True), RuntimeError("save failed")]
+)
+def test_uncertain_worker_refresh_suspends_before_retry(stripe_installation, monkeypatch, error):
+    from modules.ingestion.service import enqueue
+    from workers import runtime
+
+    connector = stripe_installation
+    with tenant_scope(connector.organization_id):
+        scan = Scan.objects.create(
+            organization_id=connector.organization_id,
+            connector=connector,
+            window_from=timezone.now() - timedelta(days=1),
+            window_through=timezone.now(),
+        )
+        row = enqueue(connector.organization_id, "stripe_scan_page", scan.id, "uncertain-refresh")
+        envelope = runtime.message(row)
+    refresh = Mock(side_effect=error)
+    monkeypatch.setattr(runtime, "refresh_access_token", refresh)
+    handle = Mock()
+    monkeypatch.setattr(runtime, "handle", handle)
+    assert runtime.run_message(envelope) is False
+    assert runtime.run_message(envelope) is False
+    handle.assert_not_called()
+    assert refresh.call_count == 1
+    with tenant_scope(connector.organization_id):
+        connector.refresh_from_db()
+        scan.refresh_from_db()
+        assert connector.status == "suspended" and not connector.credential_ciphertext and scan.status == "failed"
 
 
 @pytest.mark.integration

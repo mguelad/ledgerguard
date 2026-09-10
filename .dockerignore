@@ -29,5 +29,5 @@ vendor/
 test-results
 playwright-report
 test-results.xml
-coverage.xml
+coverage.*
 deployment.json

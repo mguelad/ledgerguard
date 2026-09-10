@@ -40,6 +40,7 @@ Set these GitHub environment variables from the Terraform outputs/account config
 | `AWS_DEPLOY_ROLE_ARN` | ARN of `ledgerguard-<environment>-github-deploy` |
 | `ECR_REPOSITORY` | Full ECR repository URL, without tag or digest |
 | `PUBLIC_ORIGIN` | Exact deployed HTTPS origin, without a path |
+| `STRIPE_APP_ID` | Operator-selected unique Stripe App ID for this environment |
 
 Run **Build and sign release** from protected `main`. It executes source/security/container and WordPress matrix checks before building, scanning and signing. The release artifact contains the destination-bound plugin ZIP, checksums, manifest, Sigstore bundle and immutable image reference. The container includes an SBOM and build provenance; the signed digest binds the built image index. Do not use an unsigned image or override a failed release check.
 
@@ -64,6 +65,8 @@ Immediately update the private Terraform variables to the verified image digest 
 Populate the application's existing Secrets Manager JSON with separate Stripe App client IDs and developer account keys for test/live. Preserve its generated `DATABASE_URL`, `DJANGO_SECRET_KEY` and `COGNITO_CLIENT_SECRET`. These developer keys perform only the App token exchange; merchants authorize through OAuth. Re-deploy the same verified digest to refresh ECS-injected secrets. [Connector setup](connectors.md) specifies App permissions, callbacks, webhook destinations and plugin installation.
 
 Verify SES domain/DKIM records, request production sending access if the account remains in the sandbox, and exercise Send/Delivery/Bounce/Complaint feedback. Create a Cognito user, complete required TOTP enrollment, sign in, create a tenant and pair an isolated test store. Apply the onboarding gates before enabling store and organization alerts. No live source credentials or financial actions are part of automated repository checks.
+
+Run the [AWS configuration preflight and Stripe test-resource checks](acceptance.md) after initialization. The preflight uses only describe/get operations and never retrieves secret values. Missing permissions, disabled services, old images and incomplete settings fail the check; passing does not replace end-to-end acceptance.
 
 Database connections verify both the server certificate chain and hostname using the checked-in AWS regional RDS CA bundle. Verify its recorded SHA-256 and refresh it through review before CA expiry/rotation. Public certificates are not private keys. The application logs omit arbitrary strings, raw requests and credentials; ALB raw URL access logs are intentionally disabled to avoid retaining OAuth codes.
 

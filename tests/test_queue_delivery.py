@@ -89,6 +89,7 @@ def test_feedback_consumer_preserves_poison_message_for_dlq(settings, monkeypatc
 
 @pytest.mark.parametrize("permanent", [False, True])
 def test_dead_connector_work_invalidates_coverage_and_closes_scan(store, monkeypatch, permanent):
+    monkeypatch.setattr(runtime, "refresh_access_token", Mock())
     with tenant_scope(store.organization_id):
         connector = Installation.objects.create(
             organization_id=store.organization_id,
